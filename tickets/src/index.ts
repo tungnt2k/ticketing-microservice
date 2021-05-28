@@ -3,7 +3,10 @@ import 'express-async-errors';
 import mongoose from 'mongoose';
 import cookieSession from 'cookie-session';
 
-import { errorHandler, NotFoundError } from '@tnttickets/common';
+import { currentUser, errorHandler, NotFoundError } from '@tnttickets/common';
+import { createTicketRouter } from './routes/new';
+import { showTicketRouter } from './routes/show';
+import { indexTicketRouter } from './routes/index';
 
 const app = express();
 app.set('trust proxy', true);
@@ -21,14 +24,23 @@ app.all('*', async (req, res) => {
 });
 
 app.use(errorHandler);
+app.use(currentUser);
+app.use(createTicketRouter);
+app.use(showTicketRouter);
+app.use(indexTicketRouter)
+
 
 const start = async () => {
   if (!process.env.JWT_KEY) {
     throw new Error('JWT_KEY must be defined');
   }
 
+  if (!process.env.MONGO_URI) {
+    throw new Error('MONGO_URI must be defined');
+  }
+
   try {
-    await mongoose.connect('mongodb://auth-mongo-srv:27017/auth', {
+    await mongoose.connect(process.env.MONGO_URI, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
       useCreateIndex: true
